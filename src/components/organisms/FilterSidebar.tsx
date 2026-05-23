@@ -1,27 +1,14 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
-import { setFilters, clearFilters } from '@/features/internships/slice';
+import { clearFilters, updateFilter } from '@/features/internships/slice';
 import { RootState } from '@/store/redux/store';
 import { Input } from '@/components/atoms/input';
 import { Checkbox } from '@/components/atoms/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/card';
 import { FilterGroup } from '@/components/molecules/FilterGroup';
-import { useEffect } from 'react';
 import { SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@/components/atoms/button';
-
-const filterSchema = z.object({
-  profile: z.string().optional(),
-  location: z.string().optional(),
-  duration: z.array(z.string()).optional(),
-  stipend: z.number().optional(),
-});
-
-type FilterValues = z.infer<typeof filterSchema>;
 
 const DURATION_OPTIONS = [
   { id: '1', label: '1 Month' },
@@ -35,51 +22,23 @@ export function FilterSidebar() {
   const dispatch = useDispatch();
   const filters = useSelector((state: RootState) => state.internships.filters);
 
-  const form = useForm<FilterValues>({
-    resolver: zodResolver(filterSchema),
-    defaultValues: {
-      profile: filters.profile,
-      location: filters.location,
-      duration: filters.duration,
-      stipend: filters.stipend,
-    },
-  });
+  const updateDuration = (duration: string, checked: boolean) => {
+    const nextDurations = checked
+      ? Array.from(new Set([...filters.duration, duration]))
+      : filters.duration.filter((value) => value !== duration);
 
-  const { control, watch, reset, setValue } = form;
-
-  // Watch all form fields and dispatch to Redux on change
-  useEffect(() => {
-    const subscription = watch((value) => {
-      const parsedValue = {
-        profile: value.profile || '',
-        location: value.location || '',
-        duration: value.duration ? (value.duration as string[]) : [],
-        stipend: value.stipend || 0,
-      };
-      dispatch(setFilters(parsedValue));
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, dispatch]);
-
-  const handleClearFilters = () => {
-    reset({
-      profile: '',
-      location: '',
-      duration: [],
-      stipend: 0,
-    });
-    dispatch(clearFilters());
+    dispatch(updateFilter({ key: 'duration', value: nextDurations }));
   };
 
   const isAnyFilterActive = 
-    !!watch('profile') || 
-    !!watch('location') || 
-    (watch('duration')?.length || 0) > 0 || 
-    (watch('stipend') || 0) > 0;
+    !!filters.profile || 
+    !!filters.location || 
+    filters.duration.length > 0 || 
+    filters.stipend > 0;
 
   return (
-    <Card className="sticky top-6 border border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm h-fit rounded-2xl overflow-hidden transition-all duration-300">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-gray-50 dark:border-gray-800/80 px-6 py-5">
+    <Card className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto border border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm rounded-xl transition-all duration-300">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-gray-50 dark:border-gray-800/80 px-5 py-4">
         <CardTitle className="text-base flex items-center font-bold text-gray-800 dark:text-gray-100">
           <SlidersHorizontal className="w-4 h-4 mr-2.5 text-blue-600 dark:text-blue-400" />
           Filters
@@ -88,7 +47,7 @@ export function FilterSidebar() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleClearFilters}
+            onClick={() => dispatch(clearFilters())}
             className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 h-8 px-2.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -101,19 +60,14 @@ export function FilterSidebar() {
         <FilterGroup 
           title="Profile" 
           tooltip="Enter keywords such as Data Science, Marketing, or Web Developer"
-          showClear={!!watch('profile')}
-          onClear={() => setValue('profile', '')}
+          showClear={!!filters.profile}
+          onClear={() => dispatch(updateFilter({ key: 'profile', value: '' }))}
         >
-          <Controller
-            control={control}
-            name="profile"
-            render={({ field }) => (
-              <Input
-                {...field}
-                placeholder="e.g. Marketing"
-                className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800/80 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-950 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-600"
-              />
-            )}
+          <Input
+            value={filters.profile}
+            onChange={(event) => dispatch(updateFilter({ key: 'profile', value: event.target.value }))}
+            placeholder="e.g. Marketing"
+            className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800/80 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-950 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-600"
           />
         </FilterGroup>
 
@@ -121,19 +75,14 @@ export function FilterSidebar() {
         <FilterGroup 
           title="Location" 
           tooltip="Filter by cities (e.g. Delhi, Bangalore) or search 'remote' / 'work from home'"
-          showClear={!!watch('location')}
-          onClear={() => setValue('location', '')}
+          showClear={!!filters.location}
+          onClear={() => dispatch(updateFilter({ key: 'location', value: '' }))}
         >
-          <Controller
-            control={control}
-            name="location"
-            render={({ field }) => (
-              <Input
-                {...field}
-                placeholder="e.g. Delhi"
-                className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800/80 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-950 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-600"
-              />
-            )}
+          <Input
+            value={filters.location}
+            onChange={(event) => dispatch(updateFilter({ key: 'location', value: event.target.value }))}
+            placeholder="e.g. Delhi"
+            className="w-full h-10 px-3 border border-gray-200 dark:border-gray-800/80 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-950 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-600"
           />
         </FilterGroup>
 
@@ -141,81 +90,60 @@ export function FilterSidebar() {
         <FilterGroup 
           title="Max Duration (Months)" 
           tooltip="Filters out internships that require longer commitments than checked"
-          showClear={(watch('duration')?.length || 0) > 0}
-          onClear={() => setValue('duration', [])}
+          showClear={filters.duration.length > 0}
+          onClear={() => dispatch(updateFilter({ key: 'duration', value: [] }))}
         >
-          <Controller
-            control={control}
-            name="duration"
-            render={({ field }) => {
-              const currentValues = field.value || [];
-              return (
-                <div className="space-y-2.5">
-                  {DURATION_OPTIONS.map((option) => (
-                    <div key={option.id} className="flex items-center space-x-3 group/item">
-                      <Checkbox
-                        id={`duration-${option.id}`}
-                        checked={currentValues.includes(option.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            field.onChange([...currentValues, option.id]);
-                          } else {
-                            field.onChange(currentValues.filter((v) => v !== option.id));
-                          }
-                        }}
-                        className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-950"
-                      />
-                      <label
-                        htmlFor={`duration-${option.id}`}
-                        className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover/item:text-gray-900 dark:group-hover/item:text-gray-200 cursor-pointer transition-colors"
-                      >
-                        {option.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              );
-            }}
-          />
+          <div className="space-y-2.5">
+            {DURATION_OPTIONS.map((option) => (
+              <div key={option.id} className="flex items-center space-x-3 group/item">
+                <Checkbox
+                  id={`duration-${option.id}`}
+                  checked={filters.duration.includes(option.id)}
+                  onCheckedChange={(checked) => updateDuration(option.id, checked === true)}
+                  className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500 dark:bg-gray-950"
+                />
+                <label
+                  htmlFor={`duration-${option.id}`}
+                  className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover/item:text-gray-900 dark:group-hover/item:text-gray-200 cursor-pointer transition-colors"
+                >
+                  {option.label}
+                </label>
+              </div>
+            ))}
+          </div>
         </FilterGroup>
 
         {/* Stipend Filter Group */}
         <FilterGroup 
           title="Minimum Stipend" 
           tooltip="Select the minimum stipend amount you wish to receive per month"
-          showClear={(watch('stipend') || 0) > 0}
-          onClear={() => setValue('stipend', 0)}
+          showClear={filters.stipend > 0}
+          onClear={() => dispatch(updateFilter({ key: 'stipend', value: 0 }))}
         >
-          <Controller
-            control={control}
-            name="stipend"
-            render={({ field }) => (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-950 p-2.5 rounded-xl border border-gray-100 dark:border-gray-800/60">
-                  <span className="text-xs text-gray-400 dark:text-gray-500">Stipend:</span>
-                  <span className="text-xs text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md">
-                    ₹ {field.value || 0} /month
-                  </span>
-                </div>
-                <div className="pt-1.5 px-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max="40000"
-                    step="2000"
-                    className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
-                    value={field.value || 0}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-600 mt-2 font-medium">
-                    <span>₹0</span>
-                    <span>₹20k</span>
-                    <span>₹40k</span>
-                  </div>
-                </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-950 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800/60">
+              <span className="text-xs text-gray-400 dark:text-gray-500">Stipend:</span>
+              <span className="text-xs text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded-md">
+                ₹ {filters.stipend} /month
+              </span>
+            </div>
+            <div className="pt-1.5 px-1">
+              <input
+                type="range"
+                min="0"
+                max="50000"
+                step="2500"
+                className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
+                value={filters.stipend}
+                onChange={(event) => dispatch(updateFilter({ key: 'stipend', value: parseInt(event.target.value, 10) }))}
+              />
+              <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-600 mt-2 font-medium">
+                <span>₹0</span>
+                <span>₹25k</span>
+                <span>₹50k</span>
               </div>
-            )}
-          />
+            </div>
+          </div>
         </FilterGroup>
       </CardContent>
     </Card>

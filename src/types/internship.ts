@@ -4,7 +4,7 @@ export interface Location {
   country: string;
   region: string | null;
   locationName: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface Stipend {
@@ -16,7 +16,7 @@ export interface Stipend {
   currency: string;
   scale: string;
   large_stipend_text: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface Internship {
@@ -78,5 +78,5 @@ export interface Internship {
     message: string;
     type: string;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 }

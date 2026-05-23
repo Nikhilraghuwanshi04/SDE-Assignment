@@ -1,5 +1,5 @@
 import { Skeleton } from '@/components/atoms/skeleton';
-import { Card, CardContent, CardHeader } from '@/components/atoms/card';
+import { Card } from '@/components/atoms/card';
 
 export function LoadingSkeleton() {
   return (

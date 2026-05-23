@@ -9,7 +9,6 @@ import {
   Calendar, 
   IndianRupee, 
   Clock, 
-  Briefcase, 
   ArrowUpRight 
 } from 'lucide-react';
 import { Separator } from '@/components/atoms/separator';

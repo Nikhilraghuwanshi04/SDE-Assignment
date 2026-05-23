@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectFilters, selectTotalFilteredResults } from '@/features/internships/selectors';
-import { updateFilter, setFilters, clearFilters } from '@/features/internships/slice';
-import { RootState } from '@/store/redux/store';
+import { updateFilter, clearFilters } from '@/features/internships/slice';
 import { Input } from '@/components/atoms/input';
 import { Button } from '@/components/atoms/button';
 import { Badge } from '@/components/atoms/badge';
@@ -13,7 +12,6 @@ import {
   Moon, 
   Sun, 
   GraduationCap, 
-  Briefcase, 
   X, 
   SlidersHorizontal 
 } from 'lucide-react';
@@ -23,14 +21,9 @@ export function SearchHeader() {
   const filters = useSelector(selectFilters);
   const totalResults = useSelector(selectTotalFilteredResults);
   
-  const [isDark, setIsDark] = useState(false);
-  const [searchInput, setSearchInput] = useState(filters.profile);
-
-  // Initialize theme state from DOM
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-    setSearchInput(filters.profile);
-  }, [filters.profile]);
+  const [isDark, setIsDark] = useState(() => (
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  ));
 
   const toggleTheme = () => {
     const root = document.documentElement;
@@ -46,15 +39,12 @@ export function SearchHeader() {
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSearchInput(val);
-    dispatch(updateFilter({ key: 'profile', value: val }));
+    dispatch(updateFilter({ key: 'profile', value: e.target.value }));
   };
 
   const removeChip = (key: 'profile' | 'location' | 'duration' | 'stipend', valueToRemove?: string) => {
     if (key === 'profile') {
       dispatch(updateFilter({ key: 'profile', value: '' }));
-      setSearchInput('');
     } else if (key === 'location') {
       dispatch(updateFilter({ key: 'location', value: '' }));
     } else if (key === 'stipend') {
@@ -130,7 +120,7 @@ export function SearchHeader() {
         <div className="relative w-full md:w-80 group">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
           <Input
-            value={searchInput}
+            value={filters.profile}
             onChange={handleSearchChange}
             placeholder="Search profiles (e.g. Developer, Web)"
             className="w-full h-11 pl-10 pr-4 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-950 shadow-sm focus-visible:ring-1 focus-visible:ring-blue-500 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-600"
@@ -150,7 +140,7 @@ export function SearchHeader() {
               variant="secondary" 
               className="pl-2.5 pr-1.5 py-1 text-xs text-blue-700 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300 rounded-lg flex items-center gap-1 border border-blue-100/50 dark:border-blue-900/30 font-medium"
             >
-              Profile: "{filters.profile}"
+              Profile: {filters.profile}
               <Button 
                 onClick={() => removeChip('profile')}
                 className="h-4 w-4 p-0 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900 flex items-center justify-center border-none"
